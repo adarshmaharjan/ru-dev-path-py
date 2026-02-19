@@ -1,15 +1,16 @@
 import abc
 import datetime
-from typing import Iterable
-from typing import Set
+from typing import Iterable, Optional, Set
 
-from redisolar.models import CapacityReport
-from redisolar.models import GeoQuery
-from redisolar.models import Measurement
-from redisolar.models import MeterReading
-from redisolar.models import MetricUnit
-from redisolar.models import Site
-from redisolar.models import SiteStats
+from redisolar.models import (
+    CapacityReport,
+    GeoQuery,
+    Measurement,
+    MeterReading,
+    MetricUnit,
+    Site,
+    SiteStats,
+)
 
 
 class SiteNotFound(Exception):
@@ -42,10 +43,9 @@ class SiteGeoDaoBase(SiteDaoBase):
 
 class SiteStatsDaoBase(abc.ABC):
     @abc.abstractmethod
-    def find_by_id(self,
-                   site_id: int,
-                   day: datetime.datetime = None,
-                   **kwargs) -> SiteStats:
+    def find_by_id(
+        self, site_id: int, day: Optional[datetime.datetime] = None, **kwargs
+    ) -> SiteStats:
         pass
 
     @abc.abstractmethod
@@ -73,8 +73,14 @@ class MetricDaoBase(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_recent(self, site_id: int, unit: MetricUnit, time: datetime.datetime,
-                   limit: int, **kwargs) -> Iterable[Measurement]:
+    def get_recent(
+        self,
+        site_id: int,
+        unit: MetricUnit,
+        time: datetime.datetime,
+        limit: int,
+        **kwargs,
+    ) -> Iterable[Measurement]:
         pass
 
 
@@ -88,8 +94,9 @@ class FeedDaoBase(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_recent_for_site(self, site_id: int, limit: int,
-                            **kwargs) -> Iterable[MeterReading]:
+    def get_recent_for_site(
+        self, site_id: int, limit: int, **kwargs
+    ) -> Iterable[MeterReading]:
         pass
 
 

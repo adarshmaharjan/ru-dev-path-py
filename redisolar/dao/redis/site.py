@@ -1,9 +1,8 @@
-from typing import Set
+from typing import Any, Mapping, Set, cast
 
-from redisolar.models import Site
-from redisolar.dao.base import SiteDaoBase
-from redisolar.dao.base import SiteNotFound
+from redisolar.dao.base import SiteDaoBase, SiteNotFound
 from redisolar.dao.redis.base import RedisDaoBase
+from redisolar.models import Site
 from redisolar.schema import FlatSiteSchema
 
 
@@ -12,11 +11,12 @@ class SiteDaoRedis(SiteDaoBase, RedisDaoBase):
 
     This class allows persisting (and querying for) Sites in Redis.
     """
+
     def insert(self, site: Site, **kwargs):
         """Insert a Site into Redis."""
         hash_key = self.key_schema.site_hash_key(site.id)
         site_ids_key = self.key_schema.site_ids_key()
-        client = kwargs.get('pipeline', self.redis)
+        client = kwargs.get("pipeline", self.redis)
         client.hset(hash_key, mapping=FlatSiteSchema().dump(site))
         client.sadd(site_ids_key, site.id)
 
@@ -32,13 +32,26 @@ class SiteDaoRedis(SiteDaoBase, RedisDaoBase):
         if not site_hash:
             raise SiteNotFound()
 
-        return FlatSiteSchema().load(site_hash)
+        return cast(Site, FlatSiteSchema().load(cast(Mapping[str, Any], site_hash)))
 
     def find_all(self, **kwargs) -> Set[Site]:
         """Find all Sites in Redis."""
         # START Challenge #1
-        # Remove this line when you've written code to build `site_hashes`.
-        site_hashes = []  # type: ignore
+        site_ids = self.redis.smembers(self.key_schema.site_ids_key()) or set()
+        print(f"DEBUG: site_ids type: {type(site_ids)}, value: {site_ids}")
+
+        if not site_ids:
+            return set()
+
+        pipeline = self.redis.pipeline()
+        for site_id in site_ids:
+            pipeline.hgetall(self.key_schema.site_hash_key(site_id))
+
+        site_hashes = pipeline.execute() or []
         # END Challenge #1
 
-        return {FlatSiteSchema().load(site_hash) for site_hash in site_hashes}
+        return {
+            cast(Site, FlatSiteSchema().load(cast(Mapping[str, Any], site_hash)))
+            for site_hash in site_hashes
+            if site_hash
+        }

@@ -1,4 +1,3 @@
-from conftest import client
 import os
 
 import pytest

@@ -1,6 +1,15 @@
 PLANETS = [
-    "Mercury", "Mercury", "Venus", "Earth", "Earth", "Mars", "Jupiter", "Saturn",
-    "Uranus", "Neptune", "Pluto"
+    "Mercury",
+    "Mercury",
+    "Venus",
+    "Earth",
+    "Earth",
+    "Mars",
+    "Jupiter",
+    "Saturn",
+    "Uranus",
+    "Neptune",
+    "Pluto",
 ]
 EARTH_KEY = "earth"
 
@@ -69,7 +78,7 @@ def test_redis_hash(redis):
         "diameter_km": "12756",
         "day_length_hrs": "24",
         "mean_temp_c": "15",
-        "moon_count": "1"
+        "moon_count": "1",
     }
 
     # Set the fields of the hash.

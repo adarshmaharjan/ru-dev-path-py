@@ -1,12 +1,8 @@
-from typing import Dict
-from typing import List
-from typing import Set
+from typing import Any, Dict, List, Mapping, Set, cast
 
-from redisolar.dao.base import SiteGeoDaoBase
-from redisolar.dao.base import SiteNotFound
+from redisolar.dao.base import SiteGeoDaoBase, SiteNotFound
 from redisolar.dao.redis.base import RedisDaoBase
-from redisolar.models import GeoQuery
-from redisolar.models import Site
+from redisolar.models import GeoQuery, Site
 from redisolar.schema import FlatSiteSchema
 
 CAPACITY_THRESHOLD = 0.2
@@ -14,18 +10,22 @@ CAPACITY_THRESHOLD = 0.2
 
 class SiteGeoDaoRedis(SiteGeoDaoBase, RedisDaoBase):
     """SiteGeoDaoRedis persists and queries Sites in Redis."""
+
     def insert(self, site: Site, **kwargs):
         """Insert a Site into Redis."""
         hash_key = self.key_schema.site_hash_key(site.id)
-        client = kwargs.get('pipeline', self.redis)
+        client = kwargs.get("pipeline", self.redis)
         client.hset(hash_key, mapping=FlatSiteSchema().dump(site))  # type: ignore
 
         if not site.coordinate:
             raise ValueError("Site coordinates are required for Geo insert")
 
         client.geoadd(  # type: ignore
-            self.key_schema.site_geo_key(), site.coordinate.lng, site.coordinate.lat,
-            site.id)
+            self.key_schema.site_geo_key(),
+            site.coordinate.lng,
+            site.coordinate.lat,
+            site.id,
+        )
 
     def insert_many(self, *sites: Site, **kwargs) -> None:
         """Insert multiple Sites into Redis."""
@@ -40,17 +40,24 @@ class SiteGeoDaoRedis(SiteGeoDaoBase, RedisDaoBase):
         if not site_hash:
             raise SiteNotFound()
 
-        return FlatSiteSchema().load(site_hash)
+        return cast(Site, FlatSiteSchema().load(cast(Mapping[str, Any], site_hash)))
 
     def _find_by_geo(self, query: GeoQuery, **kwargs) -> Set[Site]:
         site_ids = self.redis.georadius(  # type: ignore
-            self.key_schema.site_geo_key(), query.coordinate.lng, query.coordinate.lat,
-            query.radius, query.radius_unit.value)
+            self.key_schema.site_geo_key(),
+            query.coordinate.lng,
+            query.coordinate.lat,
+            query.radius,
+            query.radius_unit.value,
+        )
         sites = [
             self.redis.hgetall(self.key_schema.site_hash_key(site_id))
             for site_id in site_ids
         ]
-        return {FlatSiteSchema().load(site) for site in sites}
+        return {
+            cast(Site, FlatSiteSchema().load(cast(Mapping[str, Any], site)))
+            for site in sites
+        }
 
     def _find_by_geo_with_capacity(self, query: GeoQuery, **kwargs) -> Set[Site]:
         # START Challenge #5
@@ -78,7 +85,10 @@ class SiteGeoDaoRedis(SiteGeoDaoBase, RedisDaoBase):
                 p.hgetall(self.key_schema.site_hash_key(site_id))
         site_hashes = p.execute()
 
-        return {FlatSiteSchema().load(site) for site in site_hashes}
+        return {
+            cast(Site, FlatSiteSchema().load(cast(Mapping[str, Any], site)))
+            for site in site_hashes
+        }
 
     def find_by_geo(self, query: GeoQuery, **kwargs) -> Set[Site]:
         """Find Sites using a geographic query."""
@@ -94,6 +104,8 @@ class SiteGeoDaoRedis(SiteGeoDaoBase, RedisDaoBase):
         for site_id in site_ids:
             key = self.key_schema.site_hash_key(site_id)
             site_hash = self.redis.hgetall(key)
-            sites.add(FlatSiteSchema().load(site_hash))
+            sites.add(
+                cast(Site, FlatSiteSchema().load(cast(Mapping[str, Any], site_hash)))
+            )
 
         return sites
