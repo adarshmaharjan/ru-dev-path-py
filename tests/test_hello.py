@@ -3,16 +3,16 @@ import os
 import pytest
 import redis
 
-USERNAME = os.environ.get('REDISOLAR_REDIS_USERNAME')
-PASSWORD = os.environ.get('REDISOLAR_REDIS_PASSWORD')
+USERNAME = os.environ.get("REDISOLAR_REDIS_USERNAME")
+PASSWORD = os.environ.get("REDISOLAR_REDIS_PASSWORD")
 
 
 @pytest.fixture
 def redis_connection(app):
     client_kwargs = {
-        "host": app.config['REDIS_HOST'],
-        "port": app.config['REDIS_PORT'],
-        "decode_responses": True
+        "host": app.config["REDIS_HOST"],
+        "port": app.config["REDIS_PORT"],
+        "decode_responses": True,
     }
 
     if USERNAME:

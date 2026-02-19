@@ -1,4 +1,5 @@
 """Unit tests quiz questions in the final exam."""
+
 import datetime
 from typing import Set
 
@@ -10,7 +11,7 @@ from redisolar.dao.base import RateLimitExceededException
 def test_set_get(redis, key_schema):
     key = key_schema.quiz_get_set_key()
     client = redis
-    client.connection_pool.connection_kwargs['decode_responses'] = False
+    client.connection_pool.connection_kwargs["decode_responses"] = False
     client.set(key, 1.5)
     result = client.get(key)
     assert isinstance(result, bytes)
@@ -74,7 +75,7 @@ def test_pipeline_vs_tx(redis, key_schema):
     transaction(key_1, key_2)
 
     assert client.lrange(key_1, 0, -1) == ["A", "A"]
-    assert client.get(key_2) == '2'
+    assert client.get(key_2) == "2"
 
 
 def test_stream(redis, key_schema):
@@ -85,7 +86,7 @@ def test_stream(redis, key_schema):
     client.xadd(key, id="2-0", fields={"thing": 1})
     client.xadd(key, id="3-0", fields={"thing": 1})
 
-    _id, _ = client.xrange(key, '3-0', '3-0')[0]
+    _id, _ = client.xrange(key, "3-0", "3-0")[0]
 
     assert _id == "3-0"
 
@@ -102,13 +103,13 @@ def test_race_condition(redis, key_schema):
             client.hset(key, "max-temp", current_temperature)
 
     update_temperature(key, 22)
-    assert client.hget(key, "max-temp") == '22'
+    assert client.hget(key, "max-temp") == "22"
 
 
 def test_rate_limiter(redis, key_schema):
     client = redis
     now = datetime.datetime.now()
-    key = key_schema.quiz_rate_limiter_key(now.timestamp(), 1)
+    key = key_schema.quiz_rate_limiter_key(now.timestamp(), "1")
 
     def hit(user_id: str, max_hits: int):
         with client.pipeline(transaction=False) as p:
@@ -120,8 +121,8 @@ def test_rate_limiter(redis, key_schema):
             if len(hits) > max_hits:
                 raise RateLimitExceededException
 
-    hit(1, 2)
-    hit(1, 2)
+    hit("1", 2)
+    hit("1", 2)
 
     with pytest.raises(RateLimitExceededException):
-        hit(1, 2)
+        hit("1", 2)
